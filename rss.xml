@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>kinghajj&#x27;s blog(?) or whatever</title>
+        <link>https://kinghajj.github.io/blog</link>
+        <description>Whatever I feel like sharing</description>
+        <generator>Zola</generator>
+        <language>en</language>
+        <atom:link href="https://kinghajj.github.io/blog/rss.xml" rel="self" type="application/rss+xml"/>
+        <lastBuildDate>Sun, 24 May 2020 00:00:00 +0000</lastBuildDate>
+        
+            <item>
+                <title>Let&#x27;s party like it&#x27;s 2010</title>
+                <pubDate>Sun, 24 May 2020 00:00:00 +0000</pubDate>
+                <link>https://kinghajj.github.io/blog/first/</link>
+                <guid>https://kinghajj.github.io/blog/first/</guid>
+                <description>&lt;p&gt;So, yeah. Figured I&#x27;d finally jump in on the hot shit from last decade and use GitHub pages to host a static-site-generator-built blog. After a long, arduous process of typing &amp;quot;static site generator rust&amp;quot; into a search engine and looking at the first handful of results, I settled on using Zola. Since I still have a soft-spot for the horrid, black-background-with-red-text web pages I made in my youth, of course I had to pick the &lt;code&gt;after-dark&lt;&#x2F;code&gt; theme. (At least my sense of aesthetics has improved a bit since then, and I won&#x27;t subject you to the red text part.)&lt;&#x2F;p&gt;
+</description>
+            </item>
+        
+    </channel>
+</rss>
