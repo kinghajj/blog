@@ -1,0 +1,5 @@
+{% extends "after-dark/templates/index.html" %}
+{% block css %}
+{{ super() }}
+<link rel="stylesheet" href="{{ get_url(path="my.css", trailing_slash=false) | safe }}">
+{% endblock css %}

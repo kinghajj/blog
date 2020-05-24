@@ -1,0 +1,10 @@
+{% extends "after-dark/templates/index.html" %}
+{% block title %}Whoa there{% endblock title %}
+{% block content %}
+    {% block header %}
+        {% set current_url = "" %}
+        {{ super() }}
+    {% endblock header %}
+    <h1>404&mdash;Not Found</h1>
+    <p>Looks like you took a wrong turn.</p>
+{% endblock content %}

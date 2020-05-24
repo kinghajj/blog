@@ -1,0 +1,23 @@
+title = "kinghajj's blog(?) or whatever"
+description = "Whatever I feel like sharing"
+
+base_url = "https://kinghajj.github.io/blog"
+build_search_index = false
+compile_sass = true
+default_language = "en"
+generate_rss = true
+highlight_code = true
+highlight_theme = "monokai"
+theme = "after-dark"
+taxonomies = [
+    {name = "categories", rss = true },
+    {name = "tags", rss = true },
+]
+
+[extra]
+after_dark_menu = [
+    {name = "Blog", url = "$BASE_URL/"},
+    {name = "Code", url = "https://github.com/kinghajj"},
+    {name = "Jerbs", url = "https://www.linkedin.com/in/samfredrickson/"},
+]
+after_dark_title = "Stuff I feel like sharing"
