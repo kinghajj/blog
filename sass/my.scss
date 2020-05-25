@@ -1,4 +1,6 @@
-// higher contrast is easier on the eyes
+// # Higher contrast is easier on the eyes
+
+// ## Headings
 .dark,
 .dark h1 a,
 .dark h2 a,
@@ -8,7 +10,13 @@
     color: white;
 }
 
-// don't mute things *that* much
+// ## Code blocks
+.dark pre {
+    background-color: black !important;
+    border: 1px solid red;
+}
+
+// ## Subtitles
 .muted {
     color: lightgrey;
 }
