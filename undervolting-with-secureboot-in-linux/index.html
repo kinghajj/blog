@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>
+Undervolting with SecureBoot in Linux - kinghajj&#x27;s blog(?) or whatever
+</title>
+
+      
+        <link rel="alternate" type="application/rss+xml" title="RSS" href="https://kinghajj.github.io/blog/rss.xml">
+      
+
+      
+
+          <link rel="stylesheet" href="https://kinghajj.github.io/blog/site.css">
+      
+<link rel="stylesheet" href="https://kinghajj.github.io/blog/my.css">
+
+
+      
+      
+    </head>
+
+    <body class="hack dark main container">
+        
+    
+        
+                
+                    <header>
+                        <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;kinghajj.github.io&#x2F;blog&#x2F;">
+                                <span itemprop="name">Blog
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;github.com&#x2F;kinghajj">
+                                <span itemprop="name">Code
+                                </span></a>
+                        
+                            <a itemprop="url"
+                               class=""
+                               href="https:&#x2F;&#x2F;www.linkedin.com&#x2F;in&#x2F;samfredrickson&#x2F;">
+                                <span itemprop="name">Jerbs
+                                </span></a>
+                        
+                        </nav>
+                    </header>
+                
+            
+    
+
+<article itemscope itemtype="http://schema.org/BlogPosting">
+    <header>
+        <h1 itemprop="headline">Undervolting with SecureBoot in Linux</h1>
+        <span class="muted">
+    <svg style="margin-bottom:-3px" class="i-clock" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <circle cx="16" cy="16" r="14"/>
+        <path d="M16 8 L16 16 20 20"/>
+    </svg>
+    <span>8 minute read</span>
+    <svg style="margin-bottom: -3px" class="i-edit" viewBox="0 0 32 32"
+         width="16" height="16" fill="none" stroke="currentcolor"
+         stroke-linecap="round" stroke-linejoin="round" stroke-width="6.25%">
+        <path d="M30 7 L25 2 5 22 3 29 10 27 Z M21 6 L26 11 Z M5 22 L10 27 Z"/>
+    </svg>
+
+    Published: 2020-06-24
+</span>
+    </header>
+    <div itemprop="articleBody">
+      <p>Many laptop users choose to undervolt their machines. This decreases thermal output, which, in turn, can increase program performance, since modern CPUs will automatically adjust their operating frequency depending on the available thermal headroom. Undervolting tools exist for all major operating systems; they typically require administrator rights, but otherwise are easy to use. In Linux, however, things aren't quite so simple: recent versions of the kernel prohibit the mechanism used for undervolting Intel CPUs when SecureBoot is enabled. The most common way around this, unsurprisingly, is just to disable SecureBoot. With a bit of work, though, it is possible to keep SecureBoot enabled, but allow controlled access to the undervolting mechanism.</p>
+<span id="continue-reading"></span>
+<p>The next sections will go into some background information on undervolting, SecureBoot, and why newer versions of Linux prevent the former while the latter is enabled. You can skip any of these if you're already familiar with the topic.</p>
+<h1 id="background-undervolting">Background: Undervolting</h1>
+<p>Some laptops today are well-known for having thermal issues. A common culprit is that these laptops ship with voltage settings that are higher than actually required. This is a good default behavior, since chips' performance can vary significantly, even within a SKU. High-end chips that are put into more expensive models of these laptops, however, tend to be better binned, and often work without errors at substantially lower voltage. Since all modern chips implement some sort of &quot;auto-overclock&quot; when there is enough thermal headroom, this can translate into increased clock speeds, and thus, better performance.</p>
+<p>My current laptop is a Dell XPS 15 7590, with an 8-core Intel® i9-9980HK. This particular model performs better compared to its predecessors, but there is still room for improvement. Unfortunately, Dell's UEFI provides no way to control the voltage settings, so any adjustments must be done after booting up.</p>
+<h1 id="background-secureboot-machine-owner-keys-mok">Background: SecureBoot &amp; Machine-owner Keys (MOK)</h1>
+<p>The <a href="https://wiki.debian.org/SecureBoot#What_is_UEFI_Secure_Boot.3F">Debian Wiki</a> has a great explanation of SecureBoot and Machine Owner Keys:</p>
+<blockquote>
+<p>UEFI Secure Boot (SB) is a verification mechanism for ensuring that code launched by a computer's UEFI firmware is trusted. It is designed to protect a system against malicious code being loaded and executed early in the boot process, before the operating system has been loaded. SB works using cryptographic checksums and signatures. Each program that is loaded by the firmware includes a signature and a checksum, and before allowing execution the firmware will verify that the program is trusted by validating the checksum and the signature. When SB is enabled on a system, any attempt to execute an untrusted program will not be allowed. This stops unexpected / unauthorized code from running in the UEFI environment.</p>
+<p>...</p>
+<p>A key part of the shim design is to allow users to control their own systems. The distro CA key is built in to the shim binary itself, but there is also an extra database of keys that can be managed by the user, the so-called Machine Owner Key (MOK for short).</p>
+</blockquote>
+<p>Large distros, like Ubuntu, ship with kernels signed by the same CA key used by Microsoft for Windows. This lets them be installed onto systems with SecureBoot without making the user go through the hassle of registering their own MOK and signing the kernel manually. If you want to run any custom kernel modules, however, you must create and register a MOK with the UEFI, and sign the driver(s) with it, or the kernel will refuse the load them.</p>
+<h1 id="background-linux-and-its-msr-module">Background: Linux and its <code>msr</code> module</h1>
+<p>Intel CPUs have had MSRs—<em>model-specific registers</em>—for quite some time. All sorts of tracing and debugging functionality is available through them, but, importantly for this topic, this is also how they provide a way to dynamically adjust voltages applied to the core and caches of the CPU. More troubling, though, is that these registers can also be used to violate protection rings, allowing user applications to read <em>and write</em> over kernel memory, including kernel code. This is why applications that use the MSRs have always required some sort of elevated privileges.</p>
+<p>Previously, programs that wrote to the MSRs only required the <code>SYS_RAWIO</code> capability in Linux. Recent version of the kernel, however, don't allow any writes to the MSRs whatsoever when SecureBoot is enabled. (In kernel parlance, this is called &quot;lockdown mode.&quot;) The motivation here is sound: the entire purpose of SecureBoot is to have a trusted environment that runs only the exact code that's been authorized, so any mechanism that potentially allows modification of kernel code at runtime flies in the face of that goal.</p>
+<p>There has been at least <a href="https://lore.kernel.org/linux-security-module/38d18a24-c580-d56b-f0cd-91e8184e1f0d@gmail.com/T/">one recent proposal</a> to open up the subset of MSRs used for undervolting, even when the kernel is locked down. A consensus hasn't yet been reached, though, so for the time being, we must come up with our own solutions.</p>
+<h1 id="solution-custom-msr-module">Solution: Custom <code>msr</code> module</h1>
+<p>tl;dr: the easiest way to allow undervolting in Linux while using SecureBoot:</p>
+<ul>
+<li>Generate your own MOK and register it with the UEFI.</li>
+<li>Patch the <code>msr</code> module to remove the checks for lockdown mode.</li>
+<li>Build, sign, and install the patched module.</li>
+<li>Install an undervolting tool, like <code>intel-undervolt</code>, and give it the
+<code>RAW_IO</code> capability.</li>
+<li>Rejoice!</li>
+</ul>
+<p>In my case, Ubuntu 20.04 uses kernel v5.4.0, and the patch looks like this:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">--- ./linux-source-5.4.0/arch/x86/kernel/msr.c.orig
++++ ./linux-source-5.4.0/arch/x86/kernel/msr.c
+@@ -77,15 +77,15 @@
+        u32 data[2];
+        u32 reg = *ppos;
+        int cpu = iminor(file_inode(file));
+        int err = 0;
+        ssize_t bytes = 0;
+
+-       err = security_locked_down(LOCKDOWN_MSR);
+-       if (err)
+-               return err;
++       //err = security_locked_down(LOCKDOWN_MSR);
++       //if (err)
++       //      return err;
+
+        if (count % 8)
+                return -EINVAL; /* Invalid chunk size */
+
+        for (; count; count -= 8) {
+                if (copy_from_user(&amp;data, tmp, 8)) {
+@@ -132,15 +132,15 @@
+                        break;
+                }
+                if (copy_from_user(&amp;regs, uregs, sizeof(regs))) {
+                        err = -EFAULT;
+                        break;
+                }
+-               err = security_locked_down(LOCKDOWN_MSR);
+-               if (err)
+-                       break;
++               //err = security_locked_down(LOCKDOWN_MSR);
++               //if (err)
++               //      break;
+                err = wrmsr_safe_regs_on_cpu(cpu, regs);
+                if (err)
+                        break;
+                if (copy_to_user(uregs, &amp;regs, sizeof(regs)))
+                        err = -EFAULT;
+                break;
+</span></pre>
+<p>Pretty straightforward: look for all instances of <code>LOCKDOWN_MSR</code> in this file,
+and comment-out the lockdown check &amp; error-handling code.</p>
+<h1 id="impact">Impact</h1>
+<p>For all tests, these are the undervolt settings:</p>
+<table><thead><tr><th>Component</th><th>ΔmV</th></tr></thead><tbody>
+<tr><td>CPU Core</td><td>-99.6mV</td></tr>
+<tr><td>CPU Cache</td><td>-99.6mV</td></tr>
+</tbody></table>
+<p>The first test is running Prime95 with default settings. Starting with the undervolt applied, I let the CPU frequency and temperature settle. Then, I set the voltage to stock settings, and let the system settle again. Measurements were done using the <code>intel-undervolt</code> tool. Here's the averaged &amp; rounded results:</p>
+<table><thead><tr><th>Voltages</th><th>CPU Core (W)</th><th>CPU Core (°C)</th><th>CPU Core (Hz)</th></tr></thead><tbody>
+<tr><td>Stock</td><td>38 W</td><td>92 °C</td><td>2350 Hz</td></tr>
+<tr><td>Undervolted</td><td>34 W</td><td>92 °C</td><td>2950 Hz</td></tr>
+</tbody></table>
+<p>To see how this change would affect a realistic workload for myself, I compiled the latest trunk branches of Firefox and alacritty. Both of these runs were done with the same settings, and with a clean build tree.</p>
+<table><thead><tr><th>Voltages</th><th>Firefox Time (s)</th><th>alacritty time (s)</th></tr></thead><tbody>
+<tr><td>Stock</td><td>1401 s</td><td>139 s</td></tr>
+<tr><td>Undervolted</td><td>1273 s</td><td>129 s</td></tr>
+</tbody></table>
+<p>These are only brief, non-rigorous tests, but the results suggest that undervolting can provide tangible benefits.</p>
+<h1 id="alternatives">Alternatives</h1>
+<p>The obvious objection to this solution, of course, is that it makes SecureBoot useless. Or does it? If your system has multiple tenants, some of whom require the ability to grant programs the <code>SYS_RAWIO</code> capability, then this objection holds water. For the vast majority of laptop users, though, this isn't a threat. The owner decides which programs are allowed to perform raw I/O, and is responsible for their own security.</p>
+<p>As for the common solution to this problem—disabling SecureBoot entirely—the drawbacks are pretty clear: you're throwing the baby out with the bathwater, abandoning any sense of security and peace-of-mind that comes from cryptographic verification of your operating system. Users shouldn't have to sacrifice critical security features for acceptable performance.</p>
+<p>The best solution would satisfy the needs of both server and desktop use cases. If the kernel had an interface to control undervolting, without providing access to the raw MSRs, then we could have the best of both worlds: no way to violate the SecureBoot contract from userspace, and laptop users can get better performance. Designing a good, reusable interface for this would undoubtedly take some time; we don't want it to be married specifically to one vendor, architecture, or platform. Until such an interface gets made and merged, we'll have to stick to workarounds.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>Undervolting can provide noticeable benefits for many laptop configurations. Unfortunately, some OEMs prevent adjusting these settings in their UEFI, requiring the use of runtime mechanisms. Even <em>more</em> unfortunately, the mechanism for Intel CPUs also comes with potential security holes, which make it a challenge to provide this functionality in a way that completely complies with protocols like SecureBoot. Linux, in particular, takes the most conservative approach, absolutely forbidding access to undervolting mechanisms when running under a secure context. That is a sane starting point, but it would certainly be worthwhile to figure out an acceptable solution.</p>
+
+    </div>
+
+    
+        <footer>
+            <hr>
+            <p>
+                
+                
+                
+                    and tagged
+                    
+                        <a href="https://kinghajj.github.io/blog/tags/linux/">linux</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://kinghajj.github.io/blog/tags/secureboot/">secureboot</a>
+                        
+                            
+                                
+                                    ,
+                                
+                            
+                        
+                    
+                        <a href="https://kinghajj.github.io/blog/tags/undervolt/">undervolt</a>
+                        
+                            
+                                
+                                    and
+                                
+                            
+                        
+                    
+                        <a href="https://kinghajj.github.io/blog/tags/undervolting/">undervolting</a>
+                        
+                            
+                        
+                    
+                
+            </p>
+        </footer>
+    
+</article>
+
+
+    </body>
+
+</html>

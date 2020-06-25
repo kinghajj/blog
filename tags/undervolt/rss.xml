@@ -6,7 +6,7 @@
         <description>Whatever I feel like sharing</description>
         <generator>Zola</generator>
         <language>en</language>
-        <atom:link href="https://kinghajj.github.io/blog/rss.xml" rel="self" type="application/rss+xml"/>
+        <atom:link href="https://kinghajj.github.io/blog/tags/undervolt/rss.xml" rel="self" type="application/rss+xml"/>
         <lastBuildDate>Wed, 24 Jun 2020 00:00:00 +0000</lastBuildDate>
         
             <item>
@@ -15,15 +15,6 @@
                 <link>https://kinghajj.github.io/blog/undervolting-with-secureboot-in-linux/</link>
                 <guid>https://kinghajj.github.io/blog/undervolting-with-secureboot-in-linux/</guid>
                 <description>&lt;p&gt;Many laptop users choose to undervolt their machines. This decreases thermal output, which, in turn, can increase program performance, since modern CPUs will automatically adjust their operating frequency depending on the available thermal headroom. Undervolting tools exist for all major operating systems; they typically require administrator rights, but otherwise are easy to use. In Linux, however, things aren&#x27;t quite so simple: recent versions of the kernel prohibit the mechanism used for undervolting Intel CPUs when SecureBoot is enabled. The most common way around this, unsurprisingly, is just to disable SecureBoot. With a bit of work, though, it is possible to keep SecureBoot enabled, but allow controlled access to the undervolting mechanism.&lt;&#x2F;p&gt;
-</description>
-            </item>
-        
-            <item>
-                <title>Let&#x27;s party like it&#x27;s 2010</title>
-                <pubDate>Sun, 24 May 2020 00:00:00 +0000</pubDate>
-                <link>https://kinghajj.github.io/blog/first/</link>
-                <guid>https://kinghajj.github.io/blog/first/</guid>
-                <description>&lt;p&gt;So, yeah. Figured I&#x27;d finally jump in on the hot shit from last decade and use GitHub pages to host a static-site-generator-built blog. After a long, arduous process of typing &amp;quot;static site generator rust&amp;quot; into a search engine and looking at the first handful of results, I settled on using Zola. Since I still have a soft-spot for the horrid, black-background-with-red-text web pages I made in my youth, of course I had to pick the &lt;code&gt;after-dark&lt;&#x2F;code&gt; theme. (At least my sense of aesthetics has improved a bit since then, and I won&#x27;t subject you to the red text part.)&lt;&#x2F;p&gt;
 </description>
             </item>
         
